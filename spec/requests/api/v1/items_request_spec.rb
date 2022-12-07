@@ -7,6 +7,7 @@ describe "Items API" do
     get "/api/v1/items"
 
     expect(response).to be_successful
+    expect(response.status).to eq(200)
     items = JSON.parse(response.body, symbolize_names: true)
 
     expect(items[:data].count).to eq(3)
@@ -34,15 +35,22 @@ describe "Items API" do
 
   it "returns an array, even if only 1 item is found" do
     create_list(:item, 1)
+
     get "/api/v1/items"
+
     expect(response).to be_successful
+    expect(response.status).to eq(200)
+
     items = JSON.parse(response.body, symbolize_names: true)
     expect(items[:data].count).to eq(1)
   end
 
   it "returns an array, even if no items are found" do
     get "/api/v1/items"
+
     expect(response).to be_successful
+    expect(response.status).to eq(200)
+
     items = JSON.parse(response.body, symbolize_names: true)
     expect(items[:data]).to be_an(Array)
     expect(items[:data]).to eq([])
@@ -57,6 +65,7 @@ describe "Items API" do
     item = JSON.parse(response.body, symbolize_names: true)
 
     expect(response).to be_successful
+    expect(response.status).to eq(200)
 
     expect(item[:data]).to have_key(:id)
     expect(item[:data][:id]).to eq("#{id}")
@@ -71,8 +80,29 @@ describe "Items API" do
     expect(item[:data][:attributes][:unit_price]).to be_a(Float)
   end
 
-  xit "can create a new item" do
+  it "can create a new item" do
 
+    merchant = create(:merchant).id
+    item_params = ({
+      name: "Strawberry Cheesecake",
+      description: "Made with fresh strawberries from Hoberts Farm",
+      unit_price: 8.44,
+      merchant_id: merchant
+    })
+
+    headers = {"CONTENT_TYPE" => "application/json"}
+    #We include this header to make sure that these params are passed as JSON rather than as plain text
+
+    post "/api/v1/items", headers: headers, params: JSON.generate(item: item_params)
+    
+    created_item = Item.last
+
+    expect(response).to be_successful
+    expect(response.status).to eq(201)
+    
+    expect(created_item.name).to eq(item_params[:name])
+    expect(created_item.description).to eq(item_params[:description])
+    expect(created_item.unit_price).to eq(item_params[:unit_price])
   end
 
   xit "can update an existing item" do

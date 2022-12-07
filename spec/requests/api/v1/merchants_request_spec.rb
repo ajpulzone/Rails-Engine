@@ -7,6 +7,8 @@ describe "Merchants API" do
     get "/api/v1/merchants"
 
     expect(response).to be_successful
+    expect(response.status).to eq(200)
+
     merchants = JSON.parse(response.body, symbolize_names: true)
 
     expect(merchants[:data].count).to eq(3)
@@ -28,8 +30,12 @@ describe "Merchants API" do
 
   it "returns an array, even if only 1 merchant is found" do
     create_list(:merchant, 1)
+
     get "/api/v1/merchants"
+
     expect(response).to be_successful
+    expect(response.status).to eq(200)
+
     merchants = JSON.parse(response.body, symbolize_names: true)
     expect(merchants[:data].count).to eq(1)
   end
@@ -37,6 +43,7 @@ describe "Merchants API" do
   it "returns an array, even if no merchants are found" do
     get "/api/v1/merchants"
     expect(response).to be_successful
+    expect(response.status).to eq(200)
     merchants = JSON.parse(response.body, symbolize_names: true)
 
     expect(merchants[:data]).to be_an(Array)
@@ -52,6 +59,7 @@ describe "Merchants API" do
     merchant = JSON.parse(response.body, symbolize_names: true)
 
     expect(response).to be_successful
+    expect(response.status).to eq(200)
 
     expect(merchant[:data]).to have_key(:id)
     expect(merchant[:data][:id]).to eq("#{id}")

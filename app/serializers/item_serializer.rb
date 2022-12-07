@@ -1,7 +1,5 @@
 class ItemSerializer
   include JSONAPI::Serializer 
-  attributes :name, :description, :unit_price
+  attributes :name, :description, :unit_price, :merchant_id
 
-  # has_many :items
-  # has_many :invoices 
 end
