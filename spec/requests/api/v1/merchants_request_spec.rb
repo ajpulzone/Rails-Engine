@@ -5,15 +5,14 @@ describe "Merchants API" do
     create_list(:merchant, 3)
 
     get "/api/v1/merchants"
+    response_body = JSON.parse(response.body, symbolize_names: true)
+    merchants = response_body[:data]
 
+    expect(merchants.count).to eq(3)
     expect(response).to be_successful
     expect(response.status).to eq(200)
 
-    merchants = JSON.parse(response.body, symbolize_names: true)
-
-    expect(merchants[:data].count).to eq(3)
-
-    merchants[:data].each do |merchant|
+    merchants.each do |merchant|
       expect(merchant).to have_key(:id)
       expect(merchant[:id]).to be_an(String)
 
@@ -33,10 +32,9 @@ describe "Merchants API" do
 
     get "/api/v1/merchants"
 
+    merchants = JSON.parse(response.body, symbolize_names: true)
     expect(response).to be_successful
     expect(response.status).to eq(200)
-
-    merchants = JSON.parse(response.body, symbolize_names: true)
     expect(merchants[:data].count).to eq(1)
   end
 
@@ -52,12 +50,20 @@ describe "Merchants API" do
   end 
 
   it "can get one merchant by their id" do
+    get "/api/v1/merchants/3"
+
+    merchant = JSON.parse(response.body, symbolize_names: true)
+    expect(response.status).to eq(404)
+    expect(merchant).to have_key(:errors)
+    expect(merchant[:errors]).to eq("merchant does not exist")
+  end 
+
+  it "will respond with a 404 error if merchant id is not valid" do
     id = create(:merchant).id
 
     get "/api/v1/merchants/#{id}"
 
     merchant = JSON.parse(response.body, symbolize_names: true)
-
     expect(response).to be_successful
     expect(response.status).to eq(200)
 
@@ -66,5 +72,40 @@ describe "Merchants API" do
 
     expect(merchant[:data][:attributes]).to have_key(:name)
     expect(merchant[:data][:attributes][:name]).to be_a(String)
+  end 
+
+  it "can find all items that belong to a merchant" do
+    merchant = create(:merchant).id
+    items = create_list(:item, 3, merchant_id: merchant)
+
+    get "/api/v1/merchants/#{merchant}/items"
+    
+    items = JSON.parse(response.body, symbolize_names: true)[:data]
+    expect(items.count).to eq(3)
+    expect(response).to be_successful
+    expect(response.status).to eq(200)
+
+    items.each do |item|
+      expect(item[:attributes]).to have_key(:name)
+      expect(item[:attributes][:name]).to be_a(String)
+
+      expect(item[:attributes]).to have_key(:description)
+      expect(item[:attributes][:description]).to be_a(String)
+
+      expect(item[:attributes]).to have_key(:unit_price)
+      expect(item[:attributes][:unit_price]).to be_a(Float)
+
+      expect(item[:attributes]).to have_key(:merchant_id)
+      expect(item[:attributes][:merchant_id]).to be_an(Integer)
+    end
+  end
+
+  it "will respond with a 404 error if merchant id is not valid" do
+    get "/api/v1/merchants/3/items"
+
+    merchant_items = JSON.parse(response.body, symbolize_names: true)
+    expect(response.status).to eq(404)
+    expect(merchant_items).to have_key(:errors)
+    expect(merchant_items[:errors]).to eq("merchant does not exist")
   end 
 end

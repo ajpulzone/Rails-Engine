@@ -81,7 +81,6 @@ describe "Items API" do
   end
 
   it "can create a new item" do
-
     merchant = create(:merchant).id
     item_params = ({
       name: "Strawberry Cheesecake",
@@ -99,17 +98,75 @@ describe "Items API" do
 
     expect(response).to be_successful
     expect(response.status).to eq(201)
-    
+
     expect(created_item.name).to eq(item_params[:name])
     expect(created_item.description).to eq(item_params[:description])
     expect(created_item.unit_price).to eq(item_params[:unit_price])
+    expect(created_item.merchant_id).to eq(item_params[:merchant_id])
   end
 
-  xit "can update an existing item" do
+  it "can update an existing item" do
+    id = create(:item).id
+    previous_name = Item.last.name
+    item_params = { name: "Blueberry Muffin" }
+    headers = { "CONTENT_TYPE" => "application/json"}
+    
+    patch "/api/v1/items/#{id}", headers: headers, params: JSON.generate(item: item_params)
+    item = Item.find_by(id: id)
 
+    expect(response).to be_successful
+    expect(response.status).to eq(200)
+    expect(item.name).to_not eq(previous_name)
+    expect(item.name).to eq("Blueberry Muffin")
   end
 
-  xit "can destroy an item" do
+  it "can get the merchant of a given item" do
+    merchant = create(:merchant)
+    create_list(:item, 2, merchant_id: merchant.id)
+    item = Item.first
 
+    headers = { "CONTENT_TYPE" => "application/json"}
+    get "/api/v1/items/#{item.id}/merchant"
+    expect(response.status).to eq(200)
+  end
+
+  xit "when returning the merchant id of a given item, will return a 404 error if the merchant id does not exist" do
+    id = create(:item).id
+    previous_name = Item.last.name
+    item_params = { name: "Blueberry Muffin",
+                    merchant_id: 0 }
+    headers = { "CONTENT_TYPE" => "application/json"}
+    
+    get "/api/v1/items/#{id}", headers: headers, params: JSON.generate(item: item_params, merchant_id: 0)
+
+    expect(response.status).to eq(404)
+  end
+
+
+  xit "SAD PATH-NEED TO WRITE TEST: will return a 404 error if the item id is sent in as a string" do
+  end
+
+  xit "SAD PATH-NEED TO WRITE TEST: will return a 404 error if the item id does not exist" do
+  end
+
+  it "can destroy an item" do
+    merchant = create(:merchant).id
+    invoice = create(:invoice).id
+    item = create(:item).id
+    invoice << item
+    expect(Item.count).to eq(1)
+    # expect(Invoice.item.count).to eq(1)
+    expect{ delete "/api/v1/items/#{item}" }.to change(Item, :count).by(-1)
+
+    expect(Item.count).to eq(0)
+    expect(response).to be_successful
+    expect(response.status).to eq(200)
+    expect{Item.find(item)}.to raise_error(ActiveRecord::RecordNotFound)
+  end
+
+  xit "SAD PATH-NEED TO WRITE TEST: will destroy the invoice if the item that is destroyed is the only one on the invoice" do
+  end
+
+  xit "SAD PATH-NEED TO WRITE TEST: it will NOT destroy the invoice if there are aditional items on it" do
   end
 end
