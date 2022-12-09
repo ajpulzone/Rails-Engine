@@ -10,23 +10,31 @@ class Api::V1::ItemsController < ApplicationController
       item = Item.find(params[:id])
       render json: ItemSerializer.new(item)
     else
-      render json: {error: "An item with this id doesn't exist"}, status: 404
+      render json: {errors: "An item with this id doesn't exist"}, status: 400
     end
   end 
 
   def create
-    item = Item.create!(item_params)
-    render json: ItemSerializer.new(item), status: 201
+    item = Item.new(item_params)
+    if item.save
+      render json: ItemSerializer.new(item), status: 201
+    else 
+      render json: { errors: "item was not created" }, status: 400
+    end
   end
 
   def update
-    item = Item.update(params[:id], item_params)
-    if item.save
+    if Item.exists?(params[:id])
       item = Item.update(params[:id], item_params)
-      render json: ItemSerializer.new(item)
-    else  
-      render json: { error: "Item can't be updated"}, status: 404
-    end
+      if item.save
+        item = Item.update(params[:id], item_params)
+        render json: ItemSerializer.new(item)
+      else  
+        render json: { errors: "Item wasn't updated"}, status: 404
+      end
+    else
+      render json: { errors: "An item could not be found"}, status: 404
+    end 
   end 
 
   def destroy
