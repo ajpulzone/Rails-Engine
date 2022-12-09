@@ -10,7 +10,7 @@ class Api::V1::ItemsController < ApplicationController
       item = Item.find(params[:id])
       render json: ItemSerializer.new(item)
     else
-      render json: {errors: "An item with this id doesn't exist"}, status: 400
+      render json: {errors: "An item with this id doesn't exist"}, status: 404
     end
   end 
 
@@ -40,7 +40,6 @@ class Api::V1::ItemsController < ApplicationController
   def destroy
     #if invoice.item.count = 1
     render json: Item.delete(params[:id])
-
     #else destroy invoice
   end
 
