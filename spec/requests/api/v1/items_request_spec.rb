@@ -103,7 +103,7 @@ describe "Items API" do
       get "/api/v1/items/4"
 
       item = JSON.parse(response.body, symbolize_names: true)
-      expect(response.status).to eq(400)
+      expect(response.status).to eq(404)
       expect(item).to have_key(:errors)
       expect(item[:errors]).to eq("An item with this id doesn't exist")
     end
@@ -229,15 +229,13 @@ describe "Items API" do
       expect(item.unit_price).to eq(4.65)
     end
 
-    xit "will throw a 404 error if the id is passed as a string" do
-      #I can't get this to matter as a string since the rails routes is one big string. Will skip for now
+    it "will throw a 404 error if the id is passed as a string" do
       id = (create(:item).id).to_s
-      binding.pry
       previous_name = Item.last.name
       item_params = { name: "Blueberry Muffin" }
       headers = { "CONTENT_TYPE" => "application/json"}
       
-      patch "/api/v1/items/#{id}", headers: headers, params: JSON.generate(item: item_params)
+      patch "/api/v1/items/'id'", headers: headers, params: JSON.generate(item: item_params)
       
       created_item = JSON.parse(response.body, symbolize_names: true)
 
@@ -278,18 +276,6 @@ describe "Items API" do
     end
   end 
 
-  describe "Getting the merchant for a specified item" do
-    it "can get the merchant of a given item" do
-      merchant = create(:merchant)
-      create_list(:item, 2, merchant_id: merchant.id)
-      item = Item.first
-
-      headers = { "CONTENT_TYPE" => "application/json"}
-      get "/api/v1/items/#{item.id}/merchant"
-      expect(response.status).to eq(200)
-    end
-  end 
-
   describe "destroy an item" do
     it "can destroy an item" do
       merchant = create(:merchant).id
@@ -299,17 +285,76 @@ describe "Items API" do
       expect(Item.count).to eq(1)
       # expect(Invoice.item.count).to eq(1)
       expect{ delete "/api/v1/items/#{item}" }.to change(Item, :count).by(-1)
-
+      
       expect(Item.count).to eq(0)
       expect(response).to be_successful
       expect(response.status).to eq(200)
       expect{Item.find(item)}.to raise_error(ActiveRecord::RecordNotFound)
     end
-
+    
     xit "SAD PATH-NEED TO WRITE TEST: will destroy the invoice if the item that is destroyed is the only one on the invoice" do
     end
-
+    
     xit "SAD PATH-NEED TO WRITE TEST: it will NOT destroy the invoice if there are aditional items on it" do
     end
   end
+  
+  describe "Getting the merchant for a specified item" do
+    it "can get the merchant of a given item" do
+      merchant = create(:merchant)
+      create_list(:item, 2, merchant_id: merchant.id)
+      item = Item.first
+
+      headers = { "CONTENT_TYPE" => "application/json"}
+      get "/api/v1/items/#{item.id}/merchant"
+      item_merchant = JSON.parse(response.body, symbolize_names: true)[:data]
+
+      expect(response).to be_successful
+      expect(response.status).to eq(200)
+      expect(item_merchant[:id].to_i).to eq(merchant.id)
+      expect(item_merchant[:attributes][:name]).to eq(merchant.name)
+    end
+
+    it "will return a 404 error if the item id is passed as a string" do
+      id = (create(:item, id: 3))
+      
+      headers = { "CONTENT_TYPE" => "application/json"}
+      
+      get "/api/v1/items/'3'/merchant"
+      results = JSON.parse(response.body, symbolize_names: true)
+      expect(response).to_not be_successful
+      expect(response.status).to eq(404)
+      expect(results).to have_key(:errors)
+      expect(results[:errors]).to eq("Not found")
+    end
+
+    it "will return a 404 error if a bad integer is passed as the item id" do
+      id = (create(:item, id: 3))
+      
+      headers = { "CONTENT_TYPE" => "application/json"}
+      
+      get "/api/v1/items/899999/merchant"
+      results = JSON.parse(response.body, symbolize_names: true)
+      expect(response).to_not be_successful
+      expect(response.status).to eq(404)
+      expect(results).to have_key(:errors)
+      expect(results[:errors]).to eq("Not found")
+    end
+  end 
+
+  describe "find all items that match a search for name" do
+    xit "should return a list of items that match the search name, sorted in case-insensitive alphabetical order" do
+    end
+
+    xit "will return a 404 error if no matches are found" do
+    end
+  end
+
+  describe "can find one item by price" do
+    xit "will return one item that is the first when results are sorted case-insensitive alphabetical order" do
+    end
+
+    xit "it will return a 400 error if no matching item is found" do
+    end
+  end 
 end
